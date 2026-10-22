@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>BH Assistant</title>
+</head>
+<body>
+  <h1>
+    Assistente para tirar dúvidas <br>
+    sobre o Brain HUB App 🤖
+  </h1>
+  <h5>
+    Estudante: Murilo César Rodrigues Lima <br>
+    Professor: Sandro Jerônimo
+  </h5>
+  <hr>
+  <h3>Contexto do Brain HUB: </h3>
+  <p>
+    O Brain Hub App é um aplicativo de bem-estar que permite ao usuário registrar 
+    como está se sentindo, <br> por texto livre ou por perguntas guiadas, e receber 
+    uma leitura objetiva do seu sentimento e uma <br>sugestão prática de bem-estar 
+    personalizada. <br>
+  </p>
+  <p>
+    O objetivo é reduzir a barreira de acesso ao autoconhecimento emocional no dia 
+    a dia, funcionando <br>como apoio complementar, não substituindo o  acompanhamento 
+    psicológico ou psiquiátrico profissional. <br>
+  </p>
+  <p>
+    <strong>Proposição de valor:</strong> <br>
+    • <br>
+  </p>
+  <p>
+    <strong>Público:</strong> <br>
+    • Pessoas jovens adultas buscando autoconhecimento emocional <br>
+    • RH de empresas interessadas no clima emocional de seus funcionários
+  </p>
+  <p>
+    <strong>Entradas:</strong> <br>
+    • Texto livre digitado pelo usuário <br>
+    • Respostas a 5 perguntas guiadas <br>
+    • Perguntas customizadas criadas pelo próprio usuário
+  </p>
+  <p>
+    <strong>Saídas:</strong> <br>
+    • Score do sentimento <br>
+    • Sugestão de bem-estar gerada por IA <br>
+    • Gráfico de evolução do sentimento ao longo dos dias
+  </p>
+  <p>
+    <strong>Ferramentas de IA:</strong> <br>
+    • Análise de sentimento (NLP): classificação do relato do usuário <br>
+    • Geração de texto (LLM): cria a sugestão de bem-estar personalizada com base no relato
+  </p>
+  <p>
+    <strong>Custos:</strong> <br>
+    • Pagamento dos colaboradores <br>
+    • Equipamentos e infraestrutura para a equipe <br>
+    • Serviços em nuvem (armazenamento, APIs de IA, hospedagem do aplicativo)
+  </p>
+  <p>
+    <strong>Receitas:</strong> <br>
+    • Assinaturas com funcionalidades extras, histórico estendido e gráficos avançados <br>
+    • B2B: dashboard agregado de clima emocional para empresas
+  </p>
+  <hr><br>
+  <strong>Insira a sua chave de API do Google Gemini: </strong> <br><br>
+  <input type = "password" id="chaveAPI" placeholder = "Chave API" oninput="verificarCampo()"></input>
+  <br><br>
+  <button id="btnMostrarChave" onclick = "mostrarChave()" hidden>Mostrar Chave</button>
+  <hr> <br>
+  <strong>Caixa de Conversa com o Assistente: </strong> <br><br>
+  <textarea id="txtPergunta" rows="1" cols="50" oninput="verificarCampo()" placeholder = "Digite sua dúvida aqui"></textarea>
+  <br><br>
+  <button id="btnPerguntar" onclick="enviar()" hidden>Perguntar ao BH Assistant</button>
+  <div id="resposta"></div>
+
+  <br>
+  <script>    
+    const URL_GEMINI = "https://generativelanguage.googleapis.com/v1beta/interactions";
+    const MODELO = "gemini-3.8-flash";
+    const INSTRUCAO = "";
+
+    //Fnç para dar dinamismo à cx de texto para perguntas
+    const textarea = document.getElementById('txtPergunta');
+      textarea.addEventListener('input', function(){
+        this.style.height = 'auto';
+        this.style.height = this.scrollHeight + 'px';
+      });
+
+    // Fnç q só mostra o botão quando há texto digitado
+    function verificarCampo(){
+      const pergunta = document.getElementById("txtPergunta").value;
+      const chave = document.getElementById("chaveAPI").value;
+      document.getElementById("btnPerguntar").hidden = (pergunta.trim() === "");
+      document.getElementById("btnMostrarChave").hidden = (chave.trim() === "");
+    }
+
+    // Fnç para mostrar/esconder a chave de API digitada
+    function mostrarChave(){
+      const campo_chave = document.getElementById("chaveAPI");
+      const botao_alternar = document.getElementById("btnMostrarChave");
+      if (campo_chave.type === 'password') {
+        campo_chave.type = 'text';
+        botao_alternar.textContent = 'Esconder Chave';
+      }else{
+        campo_chave.type = 'password';
+        botao_alternar.textContent = 'Mostrar Chave';
+      }
+    }
+
+    // Fnç que envia a pergunta e retorna o texto da resposta
+    async function perguntarGemini(pergunta, chave_API){
+      const resposta = await fetch(URL_GEMINI, {
+        method: "POST",
+        headers:{
+          "Content-Type": "application/json",
+          "x-goog-api-key": chave_API
+        },
+        body: JSON.stringify({ model: MODELO, input: INSTRUCAO + pergunta})
+      });
+
+      if(resposta.status === 429){
+        throw new Error("Limite do seu plano atingido, tente novamente em instantes... ⏳");
+      }else if(resposta.status === 401){
+        throw new Error("Erro: " + resposta.status + ". Verifique sua chave de API 🙁");
+      }else if(!resposta.ok){
+        throw new Error("Erro: " + resposta.status);
+      }
+
+      const dados = await resposta.json();
+      return extrairTexto(dados);
+    }
+
+    // Fnç que procura o texto dentro do JSON devolvido
+    function extrairTexto(dados){
+      if (dados.output_text){
+        return dados.output_text;
+      }
+      if (dados.steps && dados.steps.length > 0){
+        const ultimo = dados.steps[dados.steps.length - 1];
+        if (ultimo.content && ultimo.content[0] && ultimo.content[0].text){
+          return ultimo.content[0].text;
+        }
+      }
+      return JSON.stringify(dados, null, 2);
+    }
+
+    // Lê a pergunta, chama a função e mostra o resultado
+    async function enviar(){
+      const chaveAPI = document.getElementById("chaveAPI").value;
+      //const chaveAPI = "AQ.Ab8RN6JuZyFEm0pHTZ7zPMewfox4LRwrz1P-n3h6uqRmoZwXiQ";
+      const pergunta = document.getElementById("txtPergunta").value;
+      //const pergunta = "Qual o maior pais em extensão territorial do mundo?";
+      const botao = document.getElementById("btnPerguntar");
+      const areaResposta = document.getElementById("resposta");
+
+      if (chaveAPI === ""){
+        alert("Você ainda não colocou sua chave de API 😡");
+        areaResposta.innerText = "Insira uma chave para poder usar o assistente";
+        return;
+      }
+
+      console.log(chaveAPI);
+      areaResposta.innerText = "Pensando na melhor resposta... 😃";
+      botao.disabled = true;   // evita cliques repetidos
+
+      try{
+        areaResposta.innerText = await perguntarGemini(pergunta, chaveAPI);
+      } catch (erro){
+        areaResposta.innerText = erro.message;
+      } finally{
+        botao.disabled = false;
+      }
+    }
+  </script>
+  <br><br><br>
+</body>
+</html>
