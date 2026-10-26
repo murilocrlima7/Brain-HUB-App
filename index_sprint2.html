@@ -211,12 +211,56 @@ Pergunta: `;
       return ((estimado - real) / real) * 100;
     }
 
+    // Fnç para contar a qntde de palavras de um texto
+    function contarPalavras(texto){
+      let total = 0;
+      for(let i=0; i<texto.length; i++){
+        if(/\s/.test(texto[i]) || i === ((texto.length)-1)){
+          total++;
+        }
+      }
+      return total;
+    }
+
+    // Fnç para contar a qntde de frases de um texto
+    function contarFrases(texto){
+      const caracteresEspeciais = ['.', '?', '!'];
+      let total = 0;
+      for(let i = 0; i<texto.length; i++){
+        if(caracteresEspeciais.includes(texto[i]) || i === ((texto.length)-1)){
+          total++;
+        }
+      }
+      return total;
+    }
+
+    function termosChave(resposta){
+      const termos = ['sentimento', 'bem-estar', 'RH', 'autoconhecimento'];
+      const palavras = resposta.split(/[ ,.]+/);
+      let termosEncontrados = [];
+
+
+      let total = 0;
+      for(let i = 0; i<palavras.length; i++){
+        if(termos.toLowerCase().includes(palavras[i].toLowerCase())){
+          termosEncontrados.push(palavras[i]);
+          total++;
+        }
+      }
+
+      return { termos: termosEncontrados, total: total};
+    }
+
     // Lê a pergunta, chama a função e mostra o resultado
     async function enviar(){
       const chaveAPI = document.getElementById("chaveAPI").value;
       const pergunta = document.getElementById("txtPergunta").value;
       const botao = document.getElementById("btnPerguntar");
       const areaResposta = document.getElementById("resposta");
+
+      const qntdePalavrasPergunta = contarPalavras(pergunta);
+      const qntdeFrasesPergunta = contarFrases(pergunta);
+      console.log(qntdeFrasesPergunta);
 
       if (chaveAPI === ""){
         alert("Você ainda não colocou sua chave de API 😡");
@@ -240,6 +284,8 @@ Pergunta: `;
       } finally{
         botao.disabled = false;
       }
+
+
     }
   </script>
   <br><br><br>
