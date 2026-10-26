@@ -2,21 +2,21 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <title>BH Assistant</title>
+  <title>HumorIA Assistant</title>
 </head>
 <body>
   <h1>
     Assistente para tirar dúvidas <br>
-    sobre o Brain HUB App 🤖
+    sobre o HumorIA 🤖
   </h1>
   <h5>
     Estudante: Murilo César Rodrigues Lima <br>
     Professor: Sandro Jerônimo
   </h5>
   <hr>
-  <h3>Contexto do Brain HUB: </h3>
+  <h3>Contexto do HumorIA: </h3>
   <p>
-    O Brain Hub App é um aplicativo de bem-estar que permite ao usuário registrar 
+    O HumorIA App é um aplicativo de bem-estar que permite ao usuário registrar 
     como está se sentindo, <br> por texto livre ou por perguntas guiadas, e receber 
     uma leitura objetiva do seu sentimento e uma <br>sugestão prática de bem-estar 
     personalizada. <br>
@@ -28,7 +28,14 @@
   </p>
   <p>
     <strong>Proposição de valor:</strong> <br>
-    • <br>
+    • <strong>Clareza emocional:</strong> transforma sentimentos difusos em uma leitura objetiva do próprio estado <br>
+     emocional, facilitando o autoconhecimento; <br>
+    • <strong>Percepção de padrões:</strong> permite enxergar a própria evolução emocional ao longo do tempo; <br>
+    • <strong>Facilidade de expressão:</strong> reduz a barreira para quem tem dificuldade de colocar sentimentos em palavras, <br>
+    tornando o hábito de refletir algo leve e sustentável; <br>
+    • <strong>Acesso sem barreiras:</strong> disponível a qualquer hora, privado, sem agendamento, funcionando como primeiro <br>
+    passo ou complemento ao acompanhamento profissional.
+
   </p>
   <p>
     <strong>Público:</strong> <br>
@@ -69,17 +76,49 @@
   <br><br>
   <button id="btnMostrarChave" onclick = "mostrarChave()" hidden>Mostrar Chave</button>
   <hr> <br>
-  <strong>Caixa de Conversa com o Assistente: </strong> <br><br>
+  <strong>Caixa de Conversa com a Assistente: </strong> <br><br>
   <textarea id="txtPergunta" rows="1" cols="50" oninput="verificarCampo()" placeholder = "Digite sua dúvida aqui"></textarea>
   <br><br>
-  <button id="btnPerguntar" onclick="enviar()" hidden>Perguntar ao BH Assistant</button>
+  <button id="btnPerguntar" onclick="enviar()" hidden>Perguntar à Assistante</button> <br>
   <div id="resposta"></div>
-
+  <hr>
+  <h3>Histórico: </h3>
+  <div id="historico"></div>
   <br>
   <script>    
     const URL_GEMINI = "https://generativelanguage.googleapis.com/v1beta/interactions";
     const MODELO = "gemini-3.8-flash";
-    const INSTRUCAO = "";
+    const INSTRUCOES = `Você é um assistente especialista que ajudará os usuários com relação às suas dúvidas sobre um aplicativo chamado "HumorIA".
+O HumorIA é um aplicativo de bem-estar que permite ao usuário registrar como está se sentindo, por texto livre ou por perguntas guiadas, e receber uma leitura objetiva do seu sentimento e uma sugestão prática de bem-estar personalizada.
+O objetivo é reduzir a barreira de acesso ao autoconhecimento emocional no dia a dia, funcionando como apoio complementar, não substituindo o acompanhamento psicológico ou psiquiátrico profissional.
+Proposição de valor:
+• Clareza emocional: transforma sentimentos difusos em uma leitura objetiva do próprio estado emocional, facilitando o autoconhecimento.
+• Percepção de padrões: permite enxergar a própria evolução emocional ao longo do tempo.
+• Facilidade de expressão: reduz a barreira para quem tem dificuldade de colocar sentimentos em palavras, tornando o hábito de refletir algo leve e sustentável.
+• Acesso sem barreiras: disponível a qualquer hora, privado, sem agendamento, funcionando como primeiro passo ou complemento ao acompanhamento profissional.
+Público:
+• Pessoas jovens adultas buscando autoconhecimento emocional.
+• RH de empresas interessadas no clima emocional de seus funcionários.
+Entradas:
+• Texto livre digitado pelo usuário.
+• Respostas a 5 perguntas guiadas.
+• Perguntas customizadas criadas pelo próprio usuário.
+Saídas:
+• Score do sentimento.
+• Sugestão de bem-estar gerada por IA.
+• Gráfico de evolução do sentimento ao longo dos dias.
+Ferramentas de IA:
+• Análise de sentimento (NLP): classificação do relato do usuário.
+• Geração de texto (LLM): cria a sugestão de bem-estar personalizada com base no relato.
+Custos:
+• Pagamento dos colaboradores.
+• Equipamentos e infraestrutura para a equipe.
+• Serviços em nuvem (armazenamento, APIs de IA, hospedagem do aplicativo).
+Receitas:
+• Assinaturas com funcionalidades extras, histórico estendido e gráficos avançados.
+• B2B: dashboard agregado de clima emocional para empresas.
+Vai funcionar assim: você recebe a pergunta e, com base no contexto informado anteriormente, deve elaborar uma resposta com o objetivo de sanar a dúvida do usuário. Caso a pergunta esteja fora do contexto de tirar dúvidas sobre o app, informe isso ao usuário. Não invente nenhuma informação além das que foram fornecidas. Não coloque formatações na sua resposta.
+Pergunta: `;
 
     //Fnç para dar dinamismo à cx de texto para perguntas
     const textarea = document.getElementById('txtPergunta');
@@ -117,7 +156,7 @@
           "Content-Type": "application/json",
           "x-goog-api-key": chave_API
         },
-        body: JSON.stringify({ model: MODELO, input: INSTRUCAO + pergunta})
+        body: JSON.stringify({ model: MODELO, input: INSTRUCOES + pergunta})
       });
 
       if(resposta.status === 429){
@@ -129,7 +168,7 @@
       }
 
       const dados = await resposta.json();
-      return extrairTexto(dados);
+      return { texto: extrairTexto(dados), usage: dados.usage};
     }
 
     // Fnç que procura o texto dentro do JSON devolvido
@@ -146,12 +185,36 @@
       return JSON.stringify(dados, null, 2);
     }
 
+    // Fnç que adiciona a pergunta e a resposta no histórico (mais recente em cima)
+    function adicionarAoHistorico(pergunta, textoResposta){
+      const item = document.createElement("p");
+      item.innerText = "Você: " + pergunta + "\nAssistente: " + textoResposta;
+      document.getElementById("historico").prepend(item);
+    }
+
+    // Fnç que calcula a estimação da quantidade de tokens a serem usados e os valores reais 
+    function tokenInputOutput(pergunta, resposta, usage){
+      const estimadoEntrada = Math.ceil((INSTRUCOES + pergunta).length / 4);
+      const estimadoSaida = Math.ceil(resposta.length / 4);
+
+      const realEntrada = usage?.total_input_tokens;
+      const realSaida = usage?.total_output_tokens;
+
+      return {
+        estimadoEntrada, realEntrada, erroEntrada: erroPercentual(estimadoEntrada, realEntrada),
+        estimadoSaida, realSaida, erroSaida: erroPercentual(estimadoSaida, realSaida)
+      };
+    }
+
+    function erroPercentual(estimado, real){
+      if (!real) return null;   // ausente ou zero: exibir "indisponível"
+      return ((estimado - real) / real) * 100;
+    }
+
     // Lê a pergunta, chama a função e mostra o resultado
     async function enviar(){
       const chaveAPI = document.getElementById("chaveAPI").value;
-      //const chaveAPI = "AQ.Ab8RN6JuZyFEm0pHTZ7zPMewfox4LRwrz1P-n3h6uqRmoZwXiQ";
       const pergunta = document.getElementById("txtPergunta").value;
-      //const pergunta = "Qual o maior pais em extensão territorial do mundo?";
       const botao = document.getElementById("btnPerguntar");
       const areaResposta = document.getElementById("resposta");
 
@@ -161,12 +224,17 @@
         return;
       }
 
-      console.log(chaveAPI);
+      //console.log(chaveAPI);
       areaResposta.innerText = "Pensando na melhor resposta... 😃";
       botao.disabled = true;   // evita cliques repetidos
 
       try{
-        areaResposta.innerText = await perguntarGemini(pergunta, chaveAPI);
+        const { texto, usage } = await perguntarGemini(pergunta, chaveAPI);
+        //const textoResposta = await perguntarGemini(pergunta, chaveAPI);
+        areaResposta.innerText = texto;
+        adicionarAoHistorico(pergunta, texto);
+        const metricas = tokenInputOutput(pergunta, texto, usage);
+        console.log(usage, metricas);
       } catch (erro){
         areaResposta.innerText = erro.message;
       } finally{
